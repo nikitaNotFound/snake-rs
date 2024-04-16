@@ -2,7 +2,7 @@ use macroquad::prelude::*;
 
 #[macroquad::main("SNAKE-RS")]
 async fn main() {
-    request_new_screen_size(600f32, 640f32);
+    request_new_screen_size(550f32, 620f32);
 
     let square_size = 25.0;
 
@@ -10,13 +10,15 @@ async fn main() {
         clear_background(BLACK);
         draw_text("SCORE:", 25.0, 25.0, 30.0, PURPLE);
         draw_text("0", 25.0, 45.0, 30.0, PURPLE);
-        draw_text("BEST SCORE:", 430.0, 25.0, 30.0, PURPLE);
-        draw_text("0", 430.0, 45.0, 30.0, PURPLE);
+        draw_text("BEST SCORE:", 380.0, 25.0, 30.0, PURPLE);
+        draw_text("0", 380.0, 45.0, 30.0, PURPLE);
 
-        draw_rectangle(24.0, 64.0, 552.0, 552.0, GRAY);
-        draw_rectangle(25.0, 65.0, 550.0, 550.0, BLACK);
+        draw_rectangle(24.0, 59.0, 502.0, 502.0, GRAY);
+        draw_rectangle(25.0, 60.0, 500.0, 500.0, BLACK);
 
-        render_mesh(25.0, 65.0, square_size, 550.0);
+        render_mesh(25.0, 60.0, square_size, 500.0);
+        draw_text("W,A,S,D - control", 25.0, 580.0, 30.0, GREEN);
+        draw_text("SPACE - pause", 355.0, 580.0, 30.0, GREEN);
 
         next_frame().await
     }
