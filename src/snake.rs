@@ -1,8 +1,8 @@
-use std::time::{Duration, Instant};
+use std::{collections::LinkedList, sync::Arc, time::{Duration, Instant}};
 
 use macroquad::{color::RED, input::{get_last_key_pressed, KeyCode}};
 
-use crate::board::{Board, Point};
+use crate::{board::{Board, Point}, game::Game};
 
 #[derive(Clone, PartialEq, PartialOrd)]
 enum Direction {
@@ -41,45 +41,28 @@ impl Direction {
     }
 }
 
-struct Curve {
-    point: Point,
-    from_dir: Direction,
-}
-
-impl Curve {
-    pub fn new(point: Point, from_dir: Direction) -> Self {
-        Self {
-            point,
-            from_dir,
-        }
-    }
-}
-
 pub struct Snake {
-    length: usize,
+    body: LinkedList<Point>,
     head: Point,
     direction: Direction,
-    curves: Vec<Curve>,
     last_move_time: Option<Instant>,
     speed: Duration,
     navigation_lock: bool,
 }
 
 impl Snake {
-    pub fn new
-    (board: &Board, speed: Duration) -> Self {
+    pub fn new(board: &Board, speed: Duration) -> Self {
         Self {
-            length: 5,
             head: board.get_center_point(),
+            body: LinkedList::new(),
             direction: Direction::Up,
-            curves: vec![],
             last_move_time: None,
             speed,
             navigation_lock: false,
         }
     }
 
-    pub fn handle_frame(&mut self) {
+    pub fn handle_frame(&mut self, game: &mut Game, board: &Board) {
         if !self.navigation_lock {
             if let Some(key) = get_last_key_pressed() {
                 match key {
@@ -98,7 +81,21 @@ impl Snake {
 
         if let Some(lmt) = self.last_move_time {
             if lmt.elapsed() > self.speed {
-                self.head = self.direction.get_next_point(&self.head);
+                let next_head = self.direction.get_next_point(&self.head);
+                if let Some(_) = self.body.iter().find(|b| b.eq(&next_head)) {
+                    game.on_game_over();
+                    return;
+                }
+
+                if board.check_point_overflow(&next_head) {
+                    game.on_game_over();
+                    return;
+                }
+
+                self.body.push_front(self.head.clone());
+                self.head = next_head;
+                self.body.pop_back();
+
                 self.last_move_time = Some(Instant::now());
                 self.navigation_lock = false;
             }
@@ -106,20 +103,9 @@ impl Snake {
     }
 
     pub fn render(&self, board: &Board) {
-        let mut current_point = self.head.clone();
-        let mut current_dir = self.direction.clone();
-        let mut processed_length = 0;
-
-        while processed_length < self.length {
-            board.fill_point(&current_point, RED);
-
-            if let Some(curve) = self.curves.iter().find(|c| c.point.eq(&current_point)) {
-                current_dir = curve.from_dir.clone();
-            }
-
-            current_point = current_dir.get_prev_point(&current_point);
-
-            processed_length += 1;
+        board.fill_point(&self.head, RED);
+        for point in self.body.iter() {
+            board.fill_point(point, RED);
         }
     }
 
@@ -128,7 +114,6 @@ impl Snake {
             return;
         }
 
-        self.curves.push(Curve::new(self.head.clone(), self.direction.clone()));
         self.direction = dir;
         self.navigation_lock = true;
     }

@@ -3,19 +3,19 @@ use macroquad::{color::{Color, BLACK, GRAY}, shapes::draw_rectangle};
 pub struct Board {
     size: f32,
     square_size: f32,
-    square_count: usize,
+    square_count: isize,
     x_pad: f32,
     y_pad: f32,
 }
 
 #[derive(Clone)]
 pub struct Point {
-    pub x: usize,
-    pub y: usize,
+    pub x: isize,
+    pub y: isize,
 }
 
 impl Point {
-    pub fn new(x: usize, y: usize) -> Self {
+    pub fn new(x: isize, y: isize) -> Self {
         Self {x, y}
     }
 
@@ -25,7 +25,7 @@ impl Point {
 }
 
 impl Board {
-    pub fn new(size: f32, square_count: usize, x_pad: f32, y_pad: f32) -> Self {
+    pub fn new(size: f32, square_count: isize, x_pad: f32, y_pad: f32) -> Self {
         Self {
             size,
             square_count,
@@ -41,8 +41,8 @@ impl Board {
         draw_rectangle(self.x_pad - 1.0, self.y_pad - 1.0, self.size + 2.0, self.size + 2.0, GRAY);
         draw_rectangle(self.x_pad, self.y_pad, 500.0, 500.0, BLACK);
 
-        let mut x_index: usize = 0;
-        let mut y_index: usize = 0;
+        let mut x_index: isize = 0;
+        let mut y_index: isize = 0;
 
         let x_point = self.x_pad;
         let y_point = self.y_pad;
@@ -65,9 +65,23 @@ impl Board {
 
     pub fn get_center_point(&self) -> Point {
         Point {
-            x: (self.square_count as f32 / 2.0).ceil() as usize,
-            y: (self.square_count as f32 / 2.0).ceil() as usize,
+            x: (self.square_count as f32 / 2.0).ceil() as isize,
+            y: (self.square_count as f32 / 2.0).ceil() as isize,
         }
+    }
+
+    pub fn check_point_overflow(&self, point: &Point) -> bool {
+        if point.x > self.square_count {
+            return true;
+        } else if point.y > self.square_count {
+            return true;
+        } else if point.x == 0 {
+            return true;
+        } else if point.y == 0 {
+            return true;
+        }
+
+        return false;
     }
 
     pub fn fill_point(&self, point: &Point, color: Color) {
