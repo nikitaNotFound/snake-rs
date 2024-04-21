@@ -2,7 +2,7 @@ use std::{collections::LinkedList, sync::Arc, time::{Duration, Instant}};
 
 use macroquad::{color::RED, input::{get_last_key_pressed, KeyCode}};
 
-use crate::{board::{Board, Point}, game::Game};
+use crate::{board::{self, Board, Point}, game::Game};
 
 #[derive(Clone, PartialEq, PartialOrd)]
 enum Direction {
@@ -62,7 +62,11 @@ impl Snake {
         }
     }
 
-    pub fn handle_frame(&mut self, game: &mut Game, board: &Board) {
+    pub fn handle_frame(&mut self, game: &mut Game, board: &mut Board) {
+        if game.is_paused() {
+            return;
+        }
+
         if !self.navigation_lock {
             if let Some(key) = get_last_key_pressed() {
                 match key {
@@ -81,6 +85,12 @@ impl Snake {
 
         if let Some(lmt) = self.last_move_time {
             if lmt.elapsed() > self.speed {
+                let food_collided = board.check_food_collision(&self.head);
+                if food_collided {
+                    game.on_eat();
+                    board.spawn_food(self);
+                }
+
                 let next_head = self.direction.get_next_point(&self.head);
                 if let Some(_) = self.body.iter().find(|b| b.eq(&next_head)) {
                     game.on_game_over();
@@ -94,7 +104,9 @@ impl Snake {
 
                 self.body.push_front(self.head.clone());
                 self.head = next_head;
-                self.body.pop_back();
+                if !food_collided {
+                    self.body.pop_back();
+                }
 
                 self.last_move_time = Some(Instant::now());
                 self.navigation_lock = false;
@@ -107,6 +119,25 @@ impl Snake {
         for point in self.body.iter() {
             board.fill_point(point, RED);
         }
+    }
+
+    pub fn check_collision(&self, point: &Point) -> bool {
+        if let Some(_) = self.body.iter().find(|b| b.eq(point)) {
+            return true;
+        }
+
+        if self.head.eq(point) {
+            return true;
+        }
+
+        return false;
+    }
+
+    pub fn restart(&mut self, board: &Board) {
+        self.body = LinkedList::new();
+        self.head = board.get_center_point();
+        self.direction = Direction::Up;
+        self.last_move_time = None;
     }
 
     fn change_direction(&mut self, dir: Direction) {

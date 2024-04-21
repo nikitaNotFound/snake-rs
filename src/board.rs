@@ -1,21 +1,24 @@
-use macroquad::{color::{Color, BLACK, GRAY}, shapes::draw_rectangle};
+use macroquad::{color::{Color, BLACK, GRAY, YELLOW}, rand::{gen_range, rand}, shapes::draw_rectangle};
+
+use crate::snake::Snake;
 
 pub struct Board {
     size: f32,
     square_size: f32,
-    square_count: isize,
+    square_count: i32,
     x_pad: f32,
     y_pad: f32,
+    food: Point,
 }
 
 #[derive(Clone)]
 pub struct Point {
-    pub x: isize,
-    pub y: isize,
+    pub x: i32,
+    pub y: i32,
 }
 
 impl Point {
-    pub fn new(x: isize, y: isize) -> Self {
+    pub fn new(x: i32, y: i32) -> Self {
         Self {x, y}
     }
 
@@ -25,14 +28,19 @@ impl Point {
 }
 
 impl Board {
-    pub fn new(size: f32, square_count: isize, x_pad: f32, y_pad: f32) -> Self {
+    pub fn new(size: f32, square_count: i32, x_pad: f32, y_pad: f32) -> Self {
         Self {
             size,
             square_count,
             square_size: size / square_count as f32,
             x_pad,
-            y_pad
+            y_pad,
+            food: Point::new(3, 5),
         }
+    }
+
+    pub fn restart(&mut self) {
+        self.food = Point::new(3, 5);
     }
 
     pub fn get_square_size(&self) -> f32 { self.square_size }
@@ -41,8 +49,8 @@ impl Board {
         draw_rectangle(self.x_pad - 1.0, self.y_pad - 1.0, self.size + 2.0, self.size + 2.0, GRAY);
         draw_rectangle(self.x_pad, self.y_pad, 500.0, 500.0, BLACK);
 
-        let mut x_index: isize = 0;
-        let mut y_index: isize = 0;
+        let mut x_index: i32 = 0;
+        let mut y_index: i32 = 0;
 
         let x_point = self.x_pad;
         let y_point = self.y_pad;
@@ -61,12 +69,14 @@ impl Board {
             y_index += 1;
             x_index = 0;
         }
+
+        self.fill_point(&self.food, YELLOW);
     }
 
     pub fn get_center_point(&self) -> Point {
         Point {
-            x: (self.square_count as f32 / 2.0).ceil() as isize,
-            y: (self.square_count as f32 / 2.0).ceil() as isize,
+            x: (self.square_count as f32 / 2.0).ceil() as i32,
+            y: (self.square_count as f32 / 2.0).ceil() as i32,
         }
     }
 
@@ -89,5 +99,23 @@ impl Board {
         let y_point = self.y_pad + (point.y - 1) as f32 * self.square_size;
 
         draw_rectangle(x_point + 1.0, y_point + 1.0, self.square_size - 2.0, self.square_size - 2.0, color);
+    }
+
+    pub fn spawn_food(&mut self, snake: &Snake) {
+        loop {
+            let point = Point::new(
+                gen_range(1, self.square_count as i32),
+                gen_range(1, self.square_count as i32),
+            );
+
+            if !snake.check_collision(&point) {
+                self.food = point;
+                return;
+            }
+        }
+    }
+
+    pub fn check_food_collision(&self, point: &Point) -> bool {
+        point.eq(&self.food)
     }
 }
